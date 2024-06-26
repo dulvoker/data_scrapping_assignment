@@ -13,14 +13,17 @@ BASE_URL = "https://www.ps.kz/domains/whois/result"
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
 redis = aioredis.from_url(REDIS_URL, encoding="utf-8", decode_responses=True)
 
+
 @app.on_event("startup")
 async def startup_event():
     global redis
     redis = aioredis.from_url(REDIS_URL, encoding="utf-8", decode_responses=True)
 
+
 @app.on_event("shutdown")
 async def shutdown_event():
     await redis.close()
+
 
 def get_db():
     db = SessionLocal()
@@ -28,6 +31,7 @@ def get_db():
         yield db
     finally:
         db.close()
+
 
 def parse_domain_info(data):
     info = {}
@@ -45,7 +49,8 @@ def parse_domain_info(data):
 
     last_updated_on_match = re.search(r'Последнее изменение:\n(.+)', data)
     if last_updated_on_match:
-        if last_updated_on_match == 'не': last_updated_on_match = 'не производоилось.'
+        if last_updated_on_match == 'не':
+            last_updated_on_match = 'не производоилось.'
         info['Last Updated On'] = last_updated_on_match.group(1).strip().split()[0]
 
     expiration_date_match = re.search(r'Дата окончания:\n(.+)', data)
@@ -53,6 +58,7 @@ def parse_domain_info(data):
         info['Expiration Date'] = expiration_date_match.group(1).strip().split()[0]
 
     return info
+
 
 def domain_exists(db: Session, domain_name: str) -> bool:
     return db.query(DomainLookup).filter(DomainLookup.domain_name == domain_name).first()
@@ -63,7 +69,7 @@ async def lookup_whois(domain_name: str = Query(..., description="The domain nam
     cached_result = await redis.get(domain_name)
     if cached_result:
         return json.loads(cached_result)
-    
+
     existing_record = domain_exists(db, domain_name)
     if existing_record:
         return {
@@ -75,8 +81,8 @@ async def lookup_whois(domain_name: str = Query(..., description="The domain nam
             'last_updated_on': existing_record.last_updated_on,
             'expiration_date': existing_record.expiration_date,
             'timestamp': existing_record.timestamp
-        }
-    
+            }
+
     if '.' not in domain_name:
         raise HTTPException(status_code=400, detail="Incorrect domain name")
 
@@ -84,7 +90,10 @@ async def lookup_whois(domain_name: str = Query(..., description="The domain nam
     response = requests.post(BASE_URL, params=params)
 
     if "Возникли непредвиденные проблемы. Попробуйте еще раз через несколько минут." in response.text:
-        raise HTTPException(status_code=503, detail="Возникли непредвиденные проблемы. Попробуйте еще раз через несколько минут.")
+        raise HTTPException(
+            status_code=503,
+            detail="Возникли непредвиденные проблемы. Попробуйте еще раз через несколько минут."
+        )
 
     is_not_occupied = "доступен для регистрации." in response.text
 
@@ -105,12 +114,12 @@ async def lookup_whois(domain_name: str = Query(..., description="The domain nam
         }
 
         lookup = DomainLookup(
-            domain_name=domain_name, 
-            status=result['status'], 
-            registrar=result['registrar'], 
-            name_servers=result['name_servers'], 
-            created_on=result['created_on'], 
-            last_updated_on=result['last_updated_on'], 
+            domain_name=domain_name,
+            status=result['status'],
+            registrar=result['registrar'],
+            name_servers=result['name_servers'],
+            created_on=result['created_on'],
+            last_updated_on=result['last_updated_on'],
             expiration_date=result['expiration_date']
         )
         db.add(lookup)
