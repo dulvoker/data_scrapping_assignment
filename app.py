@@ -86,9 +86,9 @@ async def lookup_whois(domain_name: str = Query(..., description="The domain nam
     if "Возникли непредвиденные проблемы. Попробуйте еще раз через несколько минут." in response.text:
         raise HTTPException(status_code=503, detail="Возникли непредвиденные проблемы. Попробуйте еще раз через несколько минут.")
 
-    is_ocuppied = ("доступен для регистрации." in response.text)
+    is_not_occupied = "доступен для регистрации." in response.text
 
-    if response.status_code == 200 and not is_ocuppied:
+    if response.status_code == 200 and not is_not_occupied:
         soup = BeautifulSoup(response.text, 'html.parser')
         data = soup.find_all('td')
         info_text = '\n'.join(each.text.strip() for each in data)
