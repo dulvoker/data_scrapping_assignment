@@ -1,4 +1,4 @@
-This is a small Python service that interacts with a PostgreSQL and Redis all containerized on Docker. 
+This is a small FastAPI service that interacts with a PostgreSQL and Redis all containerized on Docker. 
 
 ## Prerequisites
 
