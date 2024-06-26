@@ -1,4 +1,4 @@
-This is a small Python service that interacts with a PostgreSQL database. The service is containerized using Docker, and Docker Compose is used to manage multi-container applications.
+This is a small Python service that interacts with a PostgreSQL and Redis all containerized on Docker. 
 
 ## Prerequisites
 
